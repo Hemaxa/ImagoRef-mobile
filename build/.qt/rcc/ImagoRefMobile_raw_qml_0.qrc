@@ -1,0 +1,10 @@
+<RCC>
+  <qresource prefix="/qt/qml/ImagoRefMobile/">
+    <file alias="src/qml/Main.qml">/Users/sergejasin/Documents/ImagoRef-mobile/src/qml/Main.qml</file>
+    <file alias="src/qml/pages/HomePage.qml">/Users/sergejasin/Documents/ImagoRef-mobile/src/qml/pages/HomePage.qml</file>
+    <file alias="src/qml/components/BackgroundDecor.qml">/Users/sergejasin/Documents/ImagoRef-mobile/src/qml/components/BackgroundDecor.qml</file>
+    <file alias="src/qml/components/AccountChip.qml">/Users/sergejasin/Documents/ImagoRef-mobile/src/qml/components/AccountChip.qml</file>
+    <file alias="src/qml/components/BoardCard.qml">/Users/sergejasin/Documents/ImagoRef-mobile/src/qml/components/BoardCard.qml</file>
+  </qresource>
+</RCC>
+

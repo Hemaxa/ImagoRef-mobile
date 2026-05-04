@@ -1,0 +1,2 @@
+/Users/sergejasin/Documents/ImagoRef-mobile/build/ImagoRefMobile_autogen/include/../I5UM235HFU/moc_AppState.cpp.json
+/Users/sergejasin/Documents/ImagoRef-mobile/build/ImagoRefMobile_autogen/include/../I5UM235HFU/moc_ThemeManager.cpp.json

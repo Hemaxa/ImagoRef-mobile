@@ -1,0 +1,2 @@
+set(__QT_DEPLOY_TARGET_ImagoRefMobile_FILE /Users/sergejasin/Documents/ImagoRef-mobile/build/ImagoRefMobile.app/Contents/MacOS/ImagoRefMobile)
+set(__QT_DEPLOY_TARGET_ImagoRefMobile_TYPE EXECUTABLE)
