@@ -1,6 +1,0 @@
-<RCC>
-  <qresource prefix="/qt/qml/ImagoRefMobile">
-    <file alias="qmldir">/Users/sergejasin/Documents/ImagoRef-mobile/build/ImagoRefMobile/qmldir</file>
-  </qresource>
-</RCC>
-

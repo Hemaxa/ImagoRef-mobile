@@ -1,9 +1,0 @@
-module ImagoRefMobile
-typeinfo ImagoRefMobile.qmltypes
-prefer :/qt/qml/ImagoRefMobile/
-Main 1.0 src/qml/Main.qml
-HomePage 1.0 src/qml/pages/HomePage.qml
-BackgroundDecor 1.0 src/qml/components/BackgroundDecor.qml
-AccountChip 1.0 src/qml/components/AccountChip.qml
-BoardCard 1.0 src/qml/components/BoardCard.qml
-

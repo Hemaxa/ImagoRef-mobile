@@ -5,7 +5,7 @@ project(ImagoRefMobile VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick QuickControls2 Qml Svg)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Quick QuickControls2 Qml Svg)
 
 qt_standard_project_setup(REQUIRES 6.5)
 qt_policy(SET QTP0004 NEW)
@@ -14,6 +14,12 @@ set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 qt_add_executable(ImagoRefMobile MANUAL_FINALIZATION
     ${SRC_DIR}/main.cpp
+    ${SRC_DIR}/managers/BoardsListModel.h
+    ${SRC_DIR}/managers/BoardsListModel.cpp
+    ${SRC_DIR}/managers/BoardItemsModel.h
+    ${SRC_DIR}/managers/BoardItemsModel.cpp
+    ${SRC_DIR}/managers/CacheManager.h
+    ${SRC_DIR}/managers/CacheManager.cpp
     ${SRC_DIR}/managers/ThemeManager.h
     ${SRC_DIR}/managers/ThemeManager.cpp
     ${SRC_DIR}/managers/AppState.h
@@ -30,6 +36,7 @@ qt_add_qml_module(ImagoRefMobile
     QML_FILES
         src/qml/Main.qml
         src/qml/pages/HomePage.qml
+        src/qml/pages/BoardPage.qml
         src/qml/components/BackgroundDecor.qml
         src/qml/components/AccountChip.qml
         src/qml/components/BoardCard.qml
@@ -38,6 +45,7 @@ qt_add_qml_module(ImagoRefMobile
 target_link_libraries(ImagoRefMobile PRIVATE
     Qt6::Core
     Qt6::Gui
+    Qt6::Network
     Qt6::Quick
     Qt6::QuickControls2
     Qt6::Qml

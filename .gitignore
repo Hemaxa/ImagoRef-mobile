@@ -30,6 +30,23 @@ ui_*.h
 Makefile*
 *build-*
 build/
+build-*/
+.build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+Testing/
+*.app
+*.xcodeproj
+*.xcworkspace
+DerivedData/
+*.swp
+*.tmp
+*.bak
+.idea/
+.vscode/
+.cache/
 *.qm
 *.prl
 *.qmlls.ini
@@ -54,3 +71,6 @@ compile_commands.json
 *creator.user*
 
 *_qmlcache.qrc
+
+.DS_Store
+**/.DS_Store

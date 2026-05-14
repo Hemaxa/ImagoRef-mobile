@@ -5,8 +5,18 @@ import QtQuick.Layouts
 Item {
     id: root
 
-    required property var board
-    required property bool selected
+    property string cardBoardId: ""
+    property string cardTitle: ""
+    property string cardSubtitle: ""
+    property string cardUpdatedLabel: ""
+    property string cardPreviewSource: ""
+    property var cardPreviewItems: []
+    property real cardPreviewCanvasWidth: 0
+    property real cardPreviewCanvasHeight: 0
+    property real cardPreviewOriginX: 0
+    property real cardPreviewOriginY: 0
+    property int cardItemCount: 0
+    property bool selected: false
 
     signal clicked()
 
@@ -30,13 +40,62 @@ Item {
             Layout.preferredHeight: 112
 
             Rectangle {
+                id: previewViewport
                 anchors.fill: parent
                 anchors.margins: 10
                 radius: 18
+                clip: true
 
                 gradient: Gradient {
-                    GradientStop { position: 0.0; color: root.board.accentA }
-                    GradientStop { position: 1.0; color: root.board.accentB }
+                    GradientStop { position: 0.0; color: root.selected ? "#FF69B4" : "#FF7A18" }
+                    GradientStop { position: 1.0; color: root.selected ? "#00CED1" : "#FFE135" }
+                }
+
+                property real contentWidth: root.cardPreviewCanvasWidth > 0 ? root.cardPreviewCanvasWidth : width
+                property real contentHeight: root.cardPreviewCanvasHeight > 0 ? root.cardPreviewCanvasHeight : height
+                property real scaleFactor: Math.min(width / Math.max(contentWidth, 1), height / Math.max(contentHeight, 1))
+
+                Item {
+                    id: previewScene
+                    visible: root.cardPreviewItems.length > 0
+                    width: previewViewport.contentWidth * previewViewport.scaleFactor
+                    height: previewViewport.contentHeight * previewViewport.scaleFactor
+                    anchors.centerIn: parent
+
+                    Repeater {
+                        model: root.cardPreviewItems
+
+                        delegate: Item {
+                            required property var modelData
+
+                            x: (modelData.x - root.cardPreviewOriginX) * previewViewport.scaleFactor
+                            y: (modelData.y - root.cardPreviewOriginY) * previewViewport.scaleFactor
+                            width: modelData.width * previewViewport.scaleFactor
+                            height: modelData.height * previewViewport.scaleFactor
+                            rotation: modelData.rotation
+                            transformOrigin: Item.Center
+                            opacity: modelData.opacity
+                            z: modelData.z
+
+                            Image {
+                                anchors.fill: parent
+                                source: modelData.source
+                                fillMode: Image.PreserveAspectFit
+                                asynchronous: true
+                                smooth: true
+                            }
+                        }
+                    }
+                }
+
+                Image {
+                    id: previewImage
+                    anchors.fill: parent
+                    source: root.cardPreviewSource
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    smooth: true
+                    visible: root.cardPreviewItems.length === 0 && status === Image.Ready
                 }
             }
 
@@ -54,7 +113,7 @@ Item {
 
             Text {
                 Layout.fillWidth: true
-                text: board.name
+                text: root.cardTitle
                 wrapMode: Text.WordWrap
                 maximumLineCount: 2
                 elide: Text.ElideRight
@@ -65,7 +124,7 @@ Item {
 
             Text {
                 Layout.fillWidth: true
-                text: board.subtitle
+                text: root.cardSubtitle
                 wrapMode: Text.WordWrap
                 maximumLineCount: 2
                 elide: Text.ElideRight
@@ -88,7 +147,7 @@ Item {
                     Text {
                         id: statusText
                         anchors.centerIn: parent
-                        text: board.state
+                        text: "Cloud"
                         font.pixelSize: 11
                         font.bold: true
                         color: root.selected ? ThemeManager.colors.welcomeAccentYellow : "#141414"
@@ -97,7 +156,7 @@ Item {
 
                 Text {
                     Layout.fillWidth: true
-                    text: board.updatedLabel
+                    text: root.cardUpdatedLabel
                     font.pixelSize: 11
                     color: root.selected ? "#c9bbd5" : "#5b4d57"
                     elide: Text.ElideRight
@@ -106,7 +165,7 @@ Item {
 
             Text {
                 Layout.fillWidth: true
-                text: board.collaborators + " collaborators"
+                text: root.cardItemCount > 0 ? root.cardItemCount + " images" : "Ready for synced viewing"
                 font.pixelSize: 11
                 font.bold: true
                 color: root.selected ? "#fff0dd" : "#141414"
