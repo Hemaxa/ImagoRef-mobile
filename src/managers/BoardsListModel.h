@@ -56,6 +56,7 @@ public:
                        qreal previewOriginX = 0,
                        qreal previewOriginY = 0,
                        int itemCount = -1);
+    void updatePreviewItemSourceForHash(const QString &hash, const QString &source);
 
 signals:
     void countChanged();

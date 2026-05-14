@@ -61,7 +61,7 @@ Page {
 
                     Text {
                         Layout.fillWidth: true
-                        text: "Mobile sync viewer"
+                        text: "Облачные доски"
                         font.pixelSize: 24
                         font.bold: true
                         color: ThemeManager.colors.textColor
@@ -70,7 +70,7 @@ Page {
                     Text {
                         Layout.fillWidth: true
                         wrapMode: Text.WordWrap
-                        text: "Open the same cloud boards you sync from desktop. Editing still stays on the computer."
+                        text: "Открывайте те же референс-доски, что синхронизируются с настольной версией ImagoRef. Редактирование по-прежнему доступно на компьютере."
                         font.pixelSize: 13
                         color: "#d8c7e0"
                     }
@@ -122,37 +122,16 @@ Page {
                     RowLayout {
                         Layout.fillWidth: true
 
-                        Rectangle {
+                        CircularAvatar {
                             Layout.preferredWidth: 44
                             Layout.preferredHeight: 44
-                            radius: 22
-                            antialiasing: true
-                            color: "#f3dcc7"
-                            border.width: 1
-                            border.color: "#181818"
-                            clip: true
-
-                            Image {
-                                id: mobileAvatarImage
-                                anchors.fill: parent
-                                anchors.margins: 1
-                                visible: AppState.loggedIn && AppState.userAvatarUrl !== "" && status === Image.Ready
-                                source: AppState.userAvatarUrl
-                                fillMode: Image.PreserveAspectCrop
-                                cache: false
-                                asynchronous: true
-                            }
-
-                            Text {
-                                anchors.centerIn: parent
-                                visible: !AppState.loggedIn || AppState.userAvatarUrl === "" || mobileAvatarImage.status !== Image.Ready
-                                text: AppState.loggedIn
-                                    ? (AppState.userDisplayName.length > 0 ? AppState.userDisplayName.charAt(0).toUpperCase() : "?")
-                                    : "?"
-                                font.pixelSize: 18
-                                font.bold: true
-                                color: "#141414"
-                            }
+                            borderColor: "#181818"
+                            textColor: "#141414"
+                            fallbackFontPixelSize: 18
+                            fallbackText: AppState.loggedIn
+                                ? (AppState.userDisplayName.length > 0 ? AppState.userDisplayName.charAt(0).toUpperCase() : "?")
+                                : "?"
+                            source: AppState.userAvatarUrl
                         }
 
                         ColumnLayout {
@@ -161,7 +140,7 @@ Page {
 
                             Text {
                                 Layout.fillWidth: true
-                                text: AppState.loggedIn ? AppState.userDisplayName : "Sign in"
+                                text: AppState.loggedIn ? AppState.userDisplayName : "Войти"
                                 font.pixelSize: 20
                                 font.bold: true
                                 color: ThemeManager.colors.welcomeTextDark
@@ -170,7 +149,7 @@ Page {
 
                             Text {
                                 Layout.fillWidth: true
-                                text: AppState.loggedIn ? AppState.userEmail : "Use the same account as on desktop"
+                                text: AppState.loggedIn ? AppState.userEmail : "Используйте тот же аккаунт, что и на ПК"
                                 font.pixelSize: 12
                                 color: "#5b4d57"
                                 elide: Text.ElideRight
@@ -179,7 +158,7 @@ Page {
 
                         Button {
                             visible: AppState.loggedIn
-                            text: "Logout"
+                            text: "Выйти"
                             onClicked: AppState.logout()
 
                             contentItem: Text {
@@ -223,7 +202,7 @@ Page {
                         TextField {
                             id: passwordField
                             Layout.fillWidth: true
-                            placeholderText: "Password"
+                            placeholderText: "Пароль"
                             echoMode: TextInput.Password
                             color: ThemeManager.colors.textColor
                             onAccepted: AppState.login(emailField.text, passwordField.text)
@@ -239,7 +218,7 @@ Page {
                         Button {
                             id: loginButton
                             Layout.fillWidth: true
-                            text: AppState.authenticating ? "Signing in..." : "Sign in"
+                            text: AppState.authenticating ? "Входим..." : "Войти"
                             enabled: !AppState.authenticating
                             onClicked: AppState.login(emailField.text, passwordField.text)
 
@@ -272,7 +251,7 @@ Page {
                     width: parent.width
 
                     Text {
-                        text: "Cloud boards"
+                        text: "Ваши доски"
                         font.pixelSize: 22
                         font.bold: true
                         color: ThemeManager.colors.welcomeTextDark
@@ -283,7 +262,7 @@ Page {
                     }
 
                     Button {
-                        text: AppState.loadingBoards ? "Loading..." : "Refresh"
+                        text: AppState.loadingBoards ? "Загрузка..." : "Обновить"
                         enabled: !AppState.loadingBoards
                         onClicked: AppState.loadBoards()
 
@@ -340,7 +319,7 @@ Page {
                         anchors.fill: parent
                         anchors.margins: 11
                         wrapMode: Text.WordWrap
-                        text: "No cloud boards yet. Create or sync a board from the desktop app first, then refresh here."
+                        text: "Пока нет облачных досок. Сначала создайте или синхронизируйте доску в настольной версии, затем обновите список здесь."
                         font.pixelSize: 13
                         color: "#5b4d57"
                     }

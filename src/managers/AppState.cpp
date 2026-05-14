@@ -13,10 +13,12 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
+#include <QPainter>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QRegularExpression>
 #include <QSettings>
+#include <QTransform>
 #include <QTimeZone>
 #include <QUrl>
 #include <array>
@@ -121,10 +123,10 @@ QJsonObject extractObject(const QJsonDocument &document)
 QString formatDateTime(const QDateTime &dateTime)
 {
     if (!dateTime.isValid()) {
-        return QStringLiteral("Synced with cloud");
+        return QStringLiteral("Синхронизировано с облаком");
     }
 
-    return QStringLiteral("Updated %1").arg(dateTime.toLocalTime().toString("dd.MM.yyyy HH:mm"));
+    return QStringLiteral("Обновлено %1").arg(dateTime.toLocalTime().toString("dd.MM.yyyy HH:mm"));
 }
 
 }
@@ -139,7 +141,7 @@ AppState::AppState(QObject *parent)
         refreshProfile();
         loadBoards();
     } else {
-        updateStatus("Sign in to load your cloud boards on mobile.");
+        updateStatus("Войдите, чтобы открыть облачные доски на мобильном устройстве.");
     }
 }
 
@@ -243,13 +245,13 @@ void AppState::login(const QString &email, const QString &password)
 {
     const QString trimmedEmail = email.trimmed();
     if (trimmedEmail.isEmpty() || password.isEmpty()) {
-        updateError("Enter both email and password.");
+        updateError("Введите email и пароль.");
         return;
     }
 
     updateError({});
     setAuthenticating(true);
-    updateStatus("Signing in...");
+    updateStatus("Выполняется вход...");
 
     QJsonObject payload;
     payload["email"] = trimmedEmail;
@@ -264,8 +266,8 @@ void AppState::login(const QString &email, const QString &password)
         setAuthenticating(false);
 
         if (reply->error() != QNetworkReply::NoError) {
-            updateError(extractErrorMessage(reply, "Unable to sign in."));
-            updateStatus("Authentication failed.");
+            updateError(extractErrorMessage(reply, "Не удалось выполнить вход."));
+            updateStatus("Не удалось войти в аккаунт.");
             return;
         }
 
@@ -274,14 +276,14 @@ void AppState::login(const QString &email, const QString &password)
         applyUserResponse(object, false);
 
         if (m_token.isEmpty()) {
-            updateError("Server response did not include an access token.");
-            updateStatus("Authentication failed.");
+            updateError("Сервер не вернул токен доступа.");
+            updateStatus("Не удалось войти в аккаунт.");
             return;
         }
 
         persistSession();
         emit authChanged();
-        updateStatus(QString("Signed in as %1. Loading boards...").arg(userDisplayName()));
+        updateStatus(QString("Вы вошли как %1. Загружаем доски...").arg(userDisplayName()));
         loadBoards();
     });
 }
@@ -301,7 +303,7 @@ void AppState::logout()
     emit selectedBoardChanged();
     emit authChanged();
     updateError({});
-    updateStatus("Signed out. Sign in to access your synced boards.");
+    updateStatus("Вы вышли из аккаунта. Войдите снова, чтобы открыть синхронизированные доски.");
 }
 
 void AppState::loadBoards()
@@ -324,8 +326,8 @@ void AppState::loadBoards()
         }
 
         if (reply->error() != QNetworkReply::NoError) {
-            updateError(extractErrorMessage(reply, "Unable to load boards."));
-            updateStatus("Cloud boards could not be loaded.");
+            updateError(extractErrorMessage(reply, "Не удалось загрузить список досок."));
+            updateStatus("Не удалось загрузить облачные доски.");
             return;
         }
 
@@ -346,7 +348,7 @@ void AppState::openBoard(const QString &boardId, const QString &boardTitle)
     m_boardItemsModel->clear();
     updateError({});
     setLoadingBoard(true);
-    updateStatus(QString("Loading %1...").arg(boardTitle));
+    updateStatus(QString("Загружаем доску «%1»...").arg(boardTitle));
 
     QNetworkReply *reply = m_networkManager.get(authorizedRequest("/boards/" + boardId + "/metadata"));
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
@@ -359,8 +361,8 @@ void AppState::openBoard(const QString &boardId, const QString &boardTitle)
         }
 
         if (reply->error() != QNetworkReply::NoError) {
-            updateError(extractErrorMessage(reply, "Unable to open board."));
-            updateStatus("Board metadata could not be loaded.");
+            updateError(extractErrorMessage(reply, "Не удалось открыть доску."));
+            updateStatus("Не удалось загрузить данные доски.");
             return;
         }
 
@@ -380,7 +382,7 @@ void AppState::closeBoard()
     emit boardSceneChanged();
     emit selectedBoardChanged();
     updateError({});
-    updateStatus("Choose a board to view synced references.");
+    updateStatus("Выберите доску, чтобы открыть синхронизированные референсы.");
 }
 
 void AppState::refreshCurrentBoard()
@@ -500,7 +502,7 @@ void AppState::setLoadingBoard(bool value)
 void AppState::handleUnauthorized()
 {
     logout();
-    updateError("Session expired. Please sign in again.");
+    updateError("Сессия истекла. Пожалуйста, войдите снова.");
 }
 
 QNetworkRequest AppState::authorizedRequest(const QString &path) const
@@ -567,10 +569,10 @@ void AppState::parseBoardsResponse(const QByteArray &data)
 
         if (!entry.id.isEmpty()) {
             if (entry.title.isEmpty()) {
-                entry.title = "Untitled board";
+                entry.title = "Без названия";
             }
             if (entry.subtitle.isEmpty()) {
-                entry.subtitle = "Synced desktop board";
+                entry.subtitle = "Синхронизированная доска";
             }
             boards.append(entry);
         }
@@ -578,8 +580,8 @@ void AppState::parseBoardsResponse(const QByteArray &data)
 
     m_boardsModel->setBoards(boards);
     updateStatus(boards.isEmpty()
-                     ? "No cloud boards were found for this account yet."
-                     : QString("Loaded %1 board(s) from the cloud.").arg(boards.size()));
+                     ? "Для этого аккаунта пока нет облачных досок."
+                     : QString("Загружено досок из облака: %1.").arg(boards.size()));
 
     for (const BoardEntry &board : boards) {
         if (board.previewSource.isEmpty()) {
@@ -647,8 +649,8 @@ void AppState::parseBoardMetadata(const QByteArray &data)
     m_boardItemsModel->setItems(items);
     computeBoardScene(items);
     updateStatus(items.isEmpty()
-                     ? QString("%1 is empty right now.").arg(m_selectedBoardName)
-                     : QString("%1 loaded with %2 image(s).").arg(m_selectedBoardName).arg(items.size()));
+                     ? QString("Доска «%1» пока пустая.").arg(m_selectedBoardName)
+                     : QString("Доска «%1» загружена. Изображений: %2.").arg(m_selectedBoardName).arg(items.size()));
 }
 
 void AppState::computeBoardScene(const QVector<BoardItemEntry> &items)
@@ -775,6 +777,7 @@ void AppState::downloadImage(const QString &hash, const QString &downloadUrl)
         CacheManager::instance().saveToCache(hash, imageData);
         const QString localSource = QUrl::fromLocalFile(CacheManager::instance().cacheFilePath(hash)).toString();
         m_boardItemsModel->updateSourceForHash(hash, localSource);
+        m_boardsModel->updatePreviewItemSourceForHash(hash, localSource);
     });
 }
 
@@ -813,6 +816,7 @@ void AppState::fetchBoardPreview(const QString &boardId)
 
         struct PreviewItemData {
             QString id;
+            QString hash;
             QString source;
             qreal x = 0;
             qreal y = 0;
@@ -854,6 +858,7 @@ void AppState::fetchBoardPreview(const QString &boardId)
 
             PreviewItemData item;
             item.id = valueAsString(itemObject, {"id", "item_id"});
+            item.hash = hash;
             item.source = source;
             item.x = valueAsReal(itemObject, {"x", "pos_x"});
             item.y = valueAsReal(itemObject, {"y", "pos_y"});
@@ -863,17 +868,57 @@ void AppState::fetchBoardPreview(const QString &boardId)
             item.opacity = valueAsReal(payload, {"opacity"}, 1.0);
             item.z = valueAsInt(itemObject, {"z_index", "zValue"});
 
+            constexpr qreal pi = 3.14159265358979323846;
+            const qreal centerX = item.x + item.width / 2.0;
+            const qreal centerY = item.y + item.height / 2.0;
+            const qreal radians = item.rotation * pi / 180.0;
+            const qreal cosValue = std::cos(radians);
+            const qreal sinValue = std::sin(radians);
+            const qreal halfWidth = item.width / 2.0;
+            const qreal halfHeight = item.height / 2.0;
+
+            const std::array<QPointF, 4> corners = {{
+                QPointF(-halfWidth, -halfHeight),
+                QPointF(halfWidth, -halfHeight),
+                QPointF(halfWidth, halfHeight),
+                QPointF(-halfWidth, halfHeight)
+            }};
+
+            qreal itemMinX = 0;
+            qreal itemMaxX = 0;
+            qreal itemMinY = 0;
+            qreal itemMaxY = 0;
+            bool firstCorner = true;
+
+            for (const QPointF &corner : corners) {
+                const qreal rotatedX = centerX + corner.x() * cosValue - corner.y() * sinValue;
+                const qreal rotatedY = centerY + corner.x() * sinValue + corner.y() * cosValue;
+
+                if (firstCorner) {
+                    itemMinX = rotatedX;
+                    itemMaxX = rotatedX;
+                    itemMinY = rotatedY;
+                    itemMaxY = rotatedY;
+                    firstCorner = false;
+                } else {
+                    itemMinX = qMin(itemMinX, rotatedX);
+                    itemMaxX = qMax(itemMaxX, rotatedX);
+                    itemMinY = qMin(itemMinY, rotatedY);
+                    itemMaxY = qMax(itemMaxY, rotatedY);
+                }
+            }
+
             if (!hasBounds) {
-                minX = item.x;
-                minY = item.y;
-                maxX = item.x + item.width;
-                maxY = item.y + item.height;
+                minX = itemMinX;
+                minY = itemMinY;
+                maxX = itemMaxX;
+                maxY = itemMaxY;
                 hasBounds = true;
             } else {
-                minX = qMin(minX, item.x);
-                minY = qMin(minY, item.y);
-                maxX = qMax(maxX, item.x + item.width);
-                maxY = qMax(maxY, item.y + item.height);
+                minX = qMin(minX, itemMinX);
+                minY = qMin(minY, itemMinY);
+                maxX = qMax(maxX, itemMaxX);
+                maxY = qMax(maxY, itemMaxY);
             }
 
             previewData.append(item);
@@ -891,6 +936,7 @@ void AppState::fetchBoardPreview(const QString &boardId)
         for (const PreviewItemData &item : previewData) {
             QVariantMap map;
             map.insert("id", item.id);
+            map.insert("hash", item.hash);
             map.insert("source", item.source);
             map.insert("x", item.x);
             map.insert("y", item.y);
@@ -946,7 +992,7 @@ QString AppState::formatUpdatedLabel(const QJsonObject &boardObject) const
         }
     }
 
-    return QStringLiteral("Synced with desktop");
+    return QStringLiteral("Синхронизировано с настольной версией");
 }
 
 QString AppState::formatBoardSubtitle(const QJsonObject &boardObject) const
@@ -955,18 +1001,18 @@ QString AppState::formatBoardSubtitle(const QJsonObject &boardObject) const
     const int itemCount = valueAsInt(boardObject, {"items_count", "item_count", "images_count"}, -1);
 
     if (!owner.isEmpty() && itemCount >= 0) {
-        return QString("%1 images • %2").arg(itemCount).arg(owner);
+        return QString("%1 изображений • %2").arg(itemCount).arg(owner);
     }
 
     if (itemCount >= 0) {
-        return QString("%1 images synced from desktop").arg(itemCount);
+        return QString("%1 изображений синхронизировано").arg(itemCount);
     }
 
     if (!owner.isEmpty()) {
-        return QString("Owned by %1").arg(owner);
+        return QString("Владелец: %1").arg(owner);
     }
 
-    return QStringLiteral("Synced reference board");
+    return QStringLiteral("Синхронизированная доска референсов");
 }
 
 QDateTime AppState::parseApiDateTime(const QString &value) const

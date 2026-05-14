@@ -34,7 +34,7 @@ Page {
                     Layout.fillWidth: true
 
                     Button {
-                        text: "Back"
+                        text: "Назад"
                         onClicked: root.backRequested()
 
                         contentItem: Text {
@@ -64,7 +64,7 @@ Page {
                     }
 
                     Button {
-                        text: AppState.loadingBoard ? "Loading..." : "Reload"
+                        text: AppState.loadingBoard ? "Загрузка..." : "Обновить"
                         enabled: !AppState.loadingBoard
                         onClicked: AppState.refreshCurrentBoard()
 
@@ -228,7 +228,7 @@ Page {
                     Text {
                         anchors.centerIn: parent
                         visible: AppState.boardItemsModel.count === 0 && !AppState.loadingBoard
-                        text: "No images are available for this board yet."
+                        text: "На этой доске пока нет изображений."
                         color: "#5b4d57"
                         font.pixelSize: 14
                     }

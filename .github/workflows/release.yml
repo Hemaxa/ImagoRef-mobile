@@ -1,0 +1,185 @@
+name: Release Mobile
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mobile-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  QT_VERSION: 6.8.3
+  ANDROID_API_LEVEL: "35"
+  ANDROID_BUILD_TOOLS: "35.0.0"
+  ANDROID_NDK_VERSION: "27.2.12479018"
+
+jobs:
+  meta:
+    name: Prepare Release Metadata
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tag: ${{ steps.meta.outputs.tag }}
+      release_name: ${{ steps.meta.outputs.release_name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Compute version and tag
+        id: meta
+        run: |
+          VERSION="$(python3 - <<'PY'
+import re
+from pathlib import Path
+text = Path('CMakeLists.txt').read_text(encoding='utf-8')
+match = re.search(r'project\(ImagoRefMobile VERSION ([0-9.]+)', text)
+if not match:
+    raise SystemExit('Unable to extract project version')
+print(match.group(1))
+PY
+)"
+          DATE="$(date -u +%Y%m%d)"
+          TAG="v${VERSION}-${DATE}.${GITHUB_RUN_NUMBER}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "release_name=ImagoRef Mobile ${TAG}" >> "$GITHUB_OUTPUT"
+
+  build-android:
+    name: Build Android APK
+    needs: meta
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android packages
+        run: |
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-$ANDROID_HOME}" >> "$GITHUB_ENV"
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-${{ env.ANDROID_API_LEVEL }}" \
+            "build-tools;${{ env.ANDROID_BUILD_TOOLS }}" \
+            "ndk;${{ env.ANDROID_NDK_VERSION }}"
+          echo "ANDROID_NDK_ROOT=${ANDROID_SDK_ROOT:-$ANDROID_HOME}/ndk/${{ env.ANDROID_NDK_VERSION }}" >> "$GITHUB_ENV"
+
+      - name: Install Qt for Android
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: linux
+          target: android
+          arch: android_arm64_v8a
+          cache: true
+
+      - name: Configure Android build
+        run: |
+          "${QT_ROOT_DIR}/bin/qt-cmake" -S . -B build-android -GNinja \
+            -DANDROID_SDK_ROOT="${ANDROID_SDK_ROOT}" \
+            -DANDROID_NDK_ROOT="${ANDROID_NDK_ROOT}" \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Android target
+        run: cmake --build build-android --parallel
+
+      - name: Package Android APK
+        run: |
+          DEPLOY_JSON="$(find build-android -name '*deployment-settings.json' | head -n 1)"
+          test -n "$DEPLOY_JSON"
+          androiddeployqt \
+            --input "$DEPLOY_JSON" \
+            --output "${PWD}/build-android/android-build" \
+            --apk \
+            --debug
+          APK_PATH="$(find build-android/android-build -name '*.apk' | head -n 1)"
+          cp "$APK_PATH" "ImagoRefMobile_v${{ needs.meta.outputs.version }}_android-debug.apk"
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-android
+          path: ImagoRefMobile_v*_android-debug.apk
+          if-no-files-found: error
+
+  build-ios-simulator:
+    name: Build iOS Simulator App
+    needs: meta
+    runs-on: macos-14
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Qt for iOS
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host: mac
+          target: ios
+          cache: true
+
+      - name: Configure iOS project
+        run: |
+          "${QT_ROOT_DIR}/bin/qt-cmake" -S . -B build-ios -G Xcode
+
+      - name: Build iOS simulator app
+        run: |
+          xcodebuild build \
+            -project build-ios/ImagoRefMobile.xcodeproj \
+            -scheme ImagoRefMobile \
+            -configuration Release \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Archive iOS simulator app
+        run: |
+          APP_PATH="$(find build-ios -path '*Release-iphonesimulator/ImagoRefMobile.app' | head -n 1)"
+          test -d "$APP_PATH"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "ImagoRefMobile_v${{ needs.meta.outputs.version }}_ios-simulator.zip"
+
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-ios-simulator
+          path: ImagoRefMobile_v*_ios-simulator.zip
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs:
+      - meta
+      - build-android
+      - build-ios-simulator
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Publish release and tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.meta.outputs.tag }}
+          RELEASE_NAME: ${{ needs.meta.outputs.release_name }}
+        run: |
+          mapfile -t files < <(find dist -type f | sort)
+          test "${#files[@]}" -gt 0
+          gh release create "$TAG" "${files[@]}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "$RELEASE_NAME" \
+            --generate-notes

@@ -11,6 +11,10 @@ qt_standard_project_setup(REQUIRES 6.5)
 qt_policy(SET QTP0004 NEW)
 
 set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(APP_ID com.imagoref.mobile)
+set(APP_DISPLAY_NAME "ImagoRef Mobile")
+set(APP_ICON_MACOS "${CMAKE_CURRENT_SOURCE_DIR}/res/app-icon/icon.icns")
+set(IOS_ASSET_CATALOG "${CMAKE_CURRENT_SOURCE_DIR}/packs/ios/Assets.xcassets")
 
 qt_add_executable(ImagoRefMobile MANUAL_FINALIZATION
     ${SRC_DIR}/main.cpp
@@ -37,10 +41,11 @@ qt_add_qml_module(ImagoRefMobile
         src/qml/Main.qml
         src/qml/pages/HomePage.qml
         src/qml/pages/BoardPage.qml
-        src/qml/components/BackgroundDecor.qml
-        src/qml/components/AccountChip.qml
-        src/qml/components/BoardCard.qml
-)
+            src/qml/components/BackgroundDecor.qml
+            src/qml/components/AccountChip.qml
+            src/qml/components/BoardCard.qml
+            src/qml/components/CircularAvatar.qml
+    )
 
 target_link_libraries(ImagoRefMobile PRIVATE
     Qt6::Core
@@ -58,9 +63,27 @@ add_custom_command(TARGET ImagoRefMobile POST_BUILD
     "$<TARGET_FILE_DIR:ImagoRefMobile>/themes"
 )
 
+if(APPLE)
+    set_source_files_properties(${APP_ICON_MACOS} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+    set_source_files_properties(${IOS_ASSET_CATALOG} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+    target_sources(ImagoRefMobile PRIVATE
+        ${APP_ICON_MACOS}
+        ${IOS_ASSET_CATALOG}
+    )
+endif()
+
 set_target_properties(ImagoRefMobile PROPERTIES
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
+    MACOSX_BUNDLE_GUI_IDENTIFIER ${APP_ID}
+    MACOSX_BUNDLE_BUNDLE_NAME ${APP_DISPLAY_NAME}
+    MACOSX_BUNDLE_ICON_FILE icon.icns
+    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/packs/Info.plist.in"
+    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
+    QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/packs/android"
+    QT_ANDROID_VERSION_NAME ${PROJECT_VERSION}
+    QT_ANDROID_VERSION_CODE 1
 )
 
 qt_finalize_executable(ImagoRefMobile)

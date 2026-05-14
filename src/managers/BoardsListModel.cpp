@@ -156,3 +156,45 @@ void BoardsListModel::updatePreview(const QString &boardId,
         emit dataChanged(modelIndex, modelIndex, changedRoles);
     }
 }
+
+void BoardsListModel::updatePreviewItemSourceForHash(const QString &hash, const QString &source)
+{
+    if (hash.isEmpty() || source.isEmpty()) {
+        return;
+    }
+
+    for (int row = 0; row < m_boards.size(); ++row) {
+        QVariantList previewItems = m_boards[row].previewItems;
+        bool changed = false;
+
+        for (int i = 0; i < previewItems.size(); ++i) {
+            QVariantMap item = previewItems.at(i).toMap();
+            if (item.value("hash").toString() != hash) {
+                continue;
+            }
+
+            if (item.value("source").toString() == source) {
+                continue;
+            }
+
+            item.insert("source", source);
+            previewItems[i] = item;
+            changed = true;
+        }
+
+        if (!changed) {
+            continue;
+        }
+
+        m_boards[row].previewItems = previewItems;
+        if (m_boards[row].previewSource.isEmpty()
+            || m_boards[row].previewSource.contains("X-Amz-", Qt::CaseInsensitive)) {
+            m_boards[row].previewSource = source;
+            const QModelIndex modelIndex = index(row);
+            emit dataChanged(modelIndex, modelIndex, {PreviewItemsRole, PreviewSourceRole});
+        } else {
+            const QModelIndex modelIndex = index(row);
+            emit dataChanged(modelIndex, modelIndex, {PreviewItemsRole});
+        }
+    }
+}

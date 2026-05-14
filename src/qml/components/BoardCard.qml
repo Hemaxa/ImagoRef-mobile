@@ -39,17 +39,19 @@ Item {
             Layout.preferredWidth: 112
             Layout.preferredHeight: 112
 
+            Image {
+                anchors.fill: parent
+                source: ThemeManager.icons.frame || ""
+                fillMode: Image.PreserveAspectFit
+            }
+
             Rectangle {
                 id: previewViewport
                 anchors.fill: parent
-                anchors.margins: 10
-                radius: 18
+                anchors.margins: 12
+                radius: 10
                 clip: true
-
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: root.selected ? "#FF69B4" : "#FF7A18" }
-                    GradientStop { position: 1.0; color: root.selected ? "#00CED1" : "#FFE135" }
-                }
+                color: root.selected ? "#474056" : "#3c3a3a"
 
                 property real contentWidth: root.cardPreviewCanvasWidth > 0 ? root.cardPreviewCanvasWidth : width
                 property real contentHeight: root.cardPreviewCanvasHeight > 0 ? root.cardPreviewCanvasHeight : height
@@ -98,12 +100,6 @@ Item {
                     visible: root.cardPreviewItems.length === 0 && status === Image.Ready
                 }
             }
-
-            Image {
-                anchors.fill: parent
-                source: ThemeManager.icons.frame || ""
-                fillMode: Image.PreserveAspectFit
-            }
         }
 
         ColumnLayout {
@@ -147,7 +143,7 @@ Item {
                     Text {
                         id: statusText
                         anchors.centerIn: parent
-                        text: "Cloud"
+                        text: "Облако"
                         font.pixelSize: 11
                         font.bold: true
                         color: root.selected ? ThemeManager.colors.welcomeAccentYellow : "#141414"
@@ -165,7 +161,7 @@ Item {
 
             Text {
                 Layout.fillWidth: true
-                text: root.cardItemCount > 0 ? root.cardItemCount + " images" : "Ready for synced viewing"
+                text: root.cardItemCount > 0 ? root.cardItemCount + " изображений" : "Готово к просмотру"
                 font.pixelSize: 11
                 font.bold: true
                 color: root.selected ? "#fff0dd" : "#141414"
